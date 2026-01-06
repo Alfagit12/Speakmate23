@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<title>SpeakMate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --main:#6a5af9;
+  --dark:#1f2937;
+  --bg:#f4f6fb;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Segoe UI, sans-serif;
+  background:var(--bg);
+}
+nav{
+  background:linear-gradient(135deg,var(--main),#8b5cf6);
+  padding:15px 30px;
+  color:#fff;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+nav h2{margin:0;cursor:pointer}
+nav button{
+  background:#fff;
+  color:var(--main);
+  border:none;
+  padding:8px 18px;
+  border-radius:20px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.page{display:none;padding:40px;max-width:1000px;margin:auto}
+.page.active{display:block}
+
+.hero{
+  background:linear-gradient(135deg,var(--main),#8b5cf6);
+  color:white;
+  padding:80px 40px;
+  border-radius:20px;
+  text-align:center;
+}
+.hero h1{font-size:3rem}
+.hero button{
+  margin:10px;
+  padding:14px 35px;
+  border-radius:30px;
+  border:none;
+  font-size:1.1rem;
+  cursor:pointer;
+  background:white;
+  color:var(--main);
+}
+
+.box{
+  background:white;
+  padding:30px;
+  border-radius:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,.1);
+  max-width:450px;
+  margin:auto;
+}
+input{
+  width:100%;
+  padding:12px;
+  margin:10px 0;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
+.action{
+  background:var(--main);
+  color:white;
+  border:none;
+  padding:14px;
+  width:100%;
+  border-radius:12px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:20px;
+}
+.card{
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.1);
+}
+
+.topic{
+  padding:15px;
+  background:var(--main);
+  color:white;
+  border:none;
+  border-radius:15px;
+  cursor:pointer;
+}
+
+.feedback{
+  background:#f1f5f9;
+  padding:20px;
+  border-radius:15px;
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <h2 onclick="show('home')">🎤 SpeakMate</h2>
+  <button id="authBtn" onclick="show('login')">Kirish</button>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="hero">
+    <h1>Ingliz tilida gapirishni o‘rganing</h1>
+    <p>AI yordamida speaking mashqlar</p>
+    <button onclick="show('signup')">Ro‘yxatdan o‘tish</button>
+    <button onclick="show('login')">Kirish</button>
+  </div>
+</div>
+
+<!-- SIGNUP -->
+<div id="signup" class="page">
+  <div class="box">
+    <h2>Ro‘yxatdan o‘tish</h2>
+    <input id="su_name" placeholder="Ism">
+    <input id="su_email" placeholder="Email">
+    <input id="su_phone" placeholder="Telefon">
+    <input id="su_pass" type="password" placeholder="Parol">
+    <button class="action" onclick="signup()">Yuborish</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="page">
+  <div class="box">
+    <h2>Kirish</h2>
+    <input id="li_email" placeholder="Email">
+    <input id="li_pass" type="password" placeholder="Parol">
+    <button class="action" onclick="login()">Kirish</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page">
+  <h2>Xush kelibsiz, <span id="uname"></span></h2>
+  <div class="stats">
+    <div class="card">Ball<br><b id="points">0</b></div>
+    <div class="card">Mashq<br><b id="practice">0</b></div>
+    <div class="card">Daraja<br><b id="level">1</b></div>
+  </div>
+
+  <h3>Mavzular</h3>
+  <button onclick="goSpeaking()">🎤 Speaking Practice</button>
+
+
+</div>
+
+<!-- PRACTICE -->
+<div id="practicePage" class="page">
+  <h2 id="question">Savol...</h2>
+  <button class="action" onclick="record()">🎤 Gapiring</button>
+  <p id="answer"></p>
+  <div id="fb" class="feedback"></div>
+</div>
+
+<!-- ABOUT -->
+<div id="about" class="page">
+  <div class="box">
+    <h2>SpeakMate haqida</h2>
+    <p>SpeakMate — AI yordamida speakingni rivojlantiruvchi platforma.</p>
+  </div>
+</div>
+
+<script>
+const API="https://speakbackend.onrender.com";
+let user=null,question="",rec;
+
+function show(id){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+}
+
+async function signup(){
+ const r=await fetch(API+"/api/auth/signup",{method:"POST",headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({name:su_name.value,email:su_email.value,phone:su_phone.value,password:su_pass.value})});
+ const d=await r.json();
+ if(d.success) alert("Ro‘yxatdan o‘tdingiz");
+}
+
+async function login(){
+ const r=await fetch(API+"/api/auth/login",{method:"POST",headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({email:li_email.value,password:li_pass.value})});
+ const d=await r.json();
+ if(d.success){
+  user=d.user;
+  uname.innerText=user.name;
+  authBtn.innerText="Chiqish";
+  authBtn.onclick=()=>location.reload();
+  loadStats();
+  show('dashboard');
+ }
+}
+
+async function loadStats(){
+ const r=await fetch(`${API}/api/user/${user._id}/stats`);
+ const d=await r.json();
+ points.innerText=d.stats.totalPoints;
+ practice.innerText=d.stats.practicesCompleted;
+ level.innerText=d.stats.level;
+}
+
+async function start(t){
+ const r=await fetch(`${API}/api/practice/question/${t}`);
+ const d=await r.json();
+ question=d.question;
+ document.getElementById("question").innerText=question;
+ show("practicePage");
+}
+
+function record(){
+ const SR=window.SpeechRecognition||webkitSpeechRecognition;
+ rec=new SR(); rec.lang="en-US";
+ rec.onresult=e=>analyze(e.results[0][0].transcript);
+ rec.start();
+}
+
+async function analyze(text){
+ answer.innerText=text;
+ const r=await fetch(API+"/api/practice/analyze",{method:"POST",headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({transcript:text,question,userId:user._id})});
+ const d=await r.json();
+ fb.innerHTML=`Grammar: ${d.feedback.grammar_score}<br>${d.feedback.uzbek_explanation}`;
+ loadStats();
+}
+
+function goSpeaking(){
+  const user = localStorage.getItem("speakmate_user");
+  if(!user){
+    alert("Avval login qiling");
+    show('login'); // yoki window.location='login.html'
+    return;
+  }
+  window.location.href = "speaking.html";
+}
+
+
+</script>
+
+</body>
+</html>
